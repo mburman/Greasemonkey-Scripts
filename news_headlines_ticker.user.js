@@ -9,22 +9,55 @@
 
 (function(){
 	var newsObj = [];
-	function NewsItem(title, link) {
+	function NewsItem(title, link, topic) {
 		this.title = title;
 		this.link = link;
+		this.topic = topic;
 	}
 
-	GM_xmlhttpRequest({
-		method: "GET",
-		url: "http://news.google.com/?output=rss",
-		onload: function(response) {
-			parseRSS(response);
-			display();
-			return;
-		}
-	});
+	function URL_lookup(url, topic) {
+		this.url = url;
+		this.topic = topic;
+	}
 
-	function parseRSS(response) {
+	var urls = [
+
+    new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=s&output=rss", "SPORT"),
+
+	            new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=rss", "TECH"),
+	            new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=b&output=rss", "BUSINESS"),
+	            new URL_lookup("http://news.google.com/?output=rss", "GENERAL")
+	];
+
+	var cnt = urls.length-1;
+	unsafeWindow.console.log(urls[0]);
+	unsafeWindow.console.log(urls[1]);
+
+	recurse();
+
+	function recurse() {
+		GM_xmlhttpRequest({
+			method: "GET",
+			url: urls[cnt].url,
+			onload: function(response) {
+				parseRSS(response, urls[cnt].topic);
+				cnt --;
+				unsafeWindow.console.log("CNT: "+cnt);
+				if(cnt == -1) {
+					display();
+				}
+				else {
+					unsafeWindow.console.log("REC");
+
+					recurse();
+				}
+				return;
+			}
+		});
+	}
+
+	function parseRSS(response, topic) {
+		unsafeWindow.console.log("TOPIC: "+topic);
 		var titleMatch = "";
 		var linkMatch = "";
 		var regexp = /<item><title>(.*?)<\/title>/g;
@@ -44,7 +77,7 @@
 
 			titleMatch[1] = titleMatch[1].replace(special,"'");
 			linkMatch = link.exec(response.responseText);
-			newsObj.push(new NewsItem(titleMatch[1], linkMatch[1]));
+			newsObj.push(new NewsItem(titleMatch[1], linkMatch[1], topic));
 		}
 
 		return;
@@ -59,6 +92,16 @@
 			border: 1px solid #ccc;
 			padding: 20px;
 			display:none;
+		}
+
+		#topic {
+			position: absolute;
+			right: 20px;
+			margin-top: -5px;
+			color: #777;
+			font: bold 16px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
+				Geneva, Verdana, sans-serif;
+			text-shadow: 0 1px 0 #eee;
 		}
 
 		ul {
@@ -121,24 +164,31 @@
 
 		// jQuery dependent code
 		function letsJQuery() {
-			var newsString = "";
-			for (var cnt = 0; cnt < newsObj.length; cnt++) {
-				newsString += "<li><a href=\""+newsObj[cnt].link+"\">"+newsObj[cnt].title+"</a></li>";
-			}
-
-			var tickerDiv = '<div id="ticker"><ul id="news">'+newsString+'</ul></div>';
+			var tickerDiv = '<div id="ticker"><ul id="news"><li></li></ul><div id="topic">'+'</div></div>';
 
 			$('#body').append(tickerDiv);
 			$('#ticker').fadeIn('slow');
+
+
+			var i = 0;
+
+			$('ul > li').eq(0).html('<a href="'+newsObj[i].link+'">'+newsObj[i].title+'</a>');
+			$('#topic').text(newsObj[i].topic);
+
 			$('ul > li').eq(0).fadeIn('slow');
 
-			var cnt = 0;
 			setInterval(animateList, 2500);
 
 			function animateList() {
-				$('ul > li').eq(cnt).fadeOut('fast', function() {
-					cnt = (++cnt)%newsObj.length;
+				$('ul > li').eq(0).fadeOut('fast', function() {
+					i++;
+					$('ul > li').eq(0).html('<a href="'+newsObj[i].link+'">'+newsObj[i].title+'</a>');
+					i %= newsObj.length;
+					$('#topic').text(newsObj[i].topic);
+					unsafeWindow.console.log(newsObj.length);
+
 					$('ul > li').eq(cnt).fadeIn('fast', function() {
+
 					});
 				});
 			}
