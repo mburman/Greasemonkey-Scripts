@@ -4,3 +4,5 @@ Greasemonkey Scripts
 Google News Headline Ticker
 ---------------------------
 Injects a google news headline ticker onto the google homepage
+
+![screenshot](http://mburman.github.com/Greasemonkey-scripts/screenshot.png)
