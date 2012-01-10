@@ -1,10 +1,11 @@
-//==UserScript==
-//@name           News Headlines Ticker
-//@namespace      http://mburman.github.com/Greasemonkey-Scripts/
-//@description    Displays a scrolling link of news headlines from Google News on the Google Homepage
-//@include        http://www.google.*
-//@require         https://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js
-//==/UserScript==
+// ==UserScript==
+// @name           Google News Headline Ticker
+// @author		   Manish Burman
+// @namespace      http://mburman.github.com/Greasemonkey-Scripts/
+// @description    Displays a news ticker from Google News on the Google Home Page below the search bar
+// @include        http://www.google.*
+// @require        http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js
+// ==/UserScript==
 
 (function(){
 	var newsObj = [];
@@ -30,6 +31,10 @@
 		var link = /<link>(.*?)<\/link>/g;
 		var special = /&apos;/g;
 
+		// skip 2
+		linkMatch = link.exec(response.responseText);
+		linkMatch = link.exec(response.responseText);
+
 		while(true) {
 			titleMatch = regexp.exec(response.responseText);
 
@@ -42,18 +47,54 @@
 			newsObj.push(new NewsItem(titleMatch[1], linkMatch[1]));
 		}
 
-		for(var i = 0; i < newsObj.length; i++) {
-			log(newsObj[i].title);
-			log(newsObj[i].link);
-		}
-
 		return;
 	}
 
 	function display() {
-		log("DONE");
 
-		var $;
+
+		GM_addStyle((<><![CDATA[
+		#ticker {
+			background-color: #ebebeb;
+			border: 1px solid #ccc;
+			padding: 20px;
+			display:none;
+		}
+
+		ul {
+			text-align: center;
+		}
+
+		#ticker > ul > li{
+			display:none;
+			color: #333;
+			font: bold 14px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
+			"Geneva", "Verdana", "sans-serif";
+			line-height: 1;
+			padding: 8px 0;
+			text-align: center;
+			text-shadow: 0 1px 0 #eee;
+
+		}
+
+		#ticker > ul > li > a {
+			color: #013ADF;
+		}
+
+		#ticker > ul > li > a:visited {
+			color: #013ADF;
+		}
+
+		#ticker > ul#news {
+			list-style: none;
+			margin: 0;
+			padding: 0;
+		}
+
+		#ticker > ul#news li {
+			margin: 0;
+		}
+		]]></>).toString());
 
 		//	Add jQuery
 		if (typeof unsafeWindow.jQuery == 'undefined') {
@@ -80,17 +121,28 @@
 
 		// jQuery dependent code
 		function letsJQuery() {
-			log($().jquery); // check jQuery version
+			var newsString = "";
+			for (var cnt = 0; cnt < newsObj.length; cnt++) {
+				newsString += "<li><a href=\""+newsObj[cnt].link+"\">"+newsObj[cnt].title+"</a></li>";
+			}
 
-			var footDiv = '<div id="myfoot" style="display:block;width:100%;height:100px;background:#000">Code Injection</div>'
-				$('#body').append(footDiv);
+			var tickerDiv = '<div id="ticker"><ul id="news">'+newsString+'</ul></div>';
+
+			$('#body').append(tickerDiv);
+			$('#ticker').fadeIn('slow');
+			$('ul > li').eq(0).fadeIn('slow');
+
+			var cnt = 0;
+			setInterval(animateList, 2500);
+
+			function animateList() {
+				$('ul > li').eq(cnt).fadeOut('fast', function() {
+					cnt = (++cnt)%newsObj.length;
+					$('ul > li').eq(cnt).fadeIn('fast', function() {
+					});
+				});
+			}
 		}
-
-	}
-
-
-	function log(val) {
-		unsafeWindow.console.log(val);
 	}
 
 })();
