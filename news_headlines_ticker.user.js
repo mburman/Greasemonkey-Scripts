@@ -4,7 +4,9 @@
 // @namespace      http://mburman.github.com/Greasemonkey-Scripts/
 // @description    Displays a news ticker from Google News on the Google Home Page below the search bar
 // @include        http://www.google.*
+// @version        1.2
 // @require        http://ajax.googleapis.com/ajax/libs/jquery/1.6.4/jquery.min.js
+// @require        http://cdn.jquerytools.org/1.2.6/jquery.tools.min.js
 // ==/UserScript==
 
 (function(){
@@ -20,10 +22,11 @@
 		this.topic = topic;
 	}
 
+	unsafeWindow.console.log(unsafeWindow.location.href);
+
+
 	var urls = [
-
-    new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=s&output=rss", "SPORT"),
-
+	            new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=s&output=rss", "SPORT"),
 	            new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=tc&output=rss", "TECH"),
 	            new URL_lookup("http://news.google.com/news?pz=1&cf=all&ned=us&hl=en&topic=b&output=rss", "BUSINESS"),
 	            new URL_lookup("http://news.google.com/?output=rss", "GENERAL")
@@ -79,12 +82,10 @@
 			linkMatch = link.exec(response.responseText);
 			newsObj.push(new NewsItem(titleMatch[1], linkMatch[1], topic));
 		}
-
 		return;
 	}
 
 	function display() {
-
 
 		GM_addStyle((<><![CDATA[
 		#ticker {
@@ -99,13 +100,33 @@
 			right: 20px;
 			margin-top: -5px;
 			color: #777;
-			font: bold 16px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
-				Geneva, Verdana, sans-serif;
+			font: bold 14px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
+			"Geneva", "Verdana", "sans-serif";
 			text-shadow: 0 1px 0 #eee;
 		}
 
-		ul {
+		#ticker ul {
 			text-align: center;
+		}
+
+		#optionsList {
+			position: fixed;
+			right: 30px;
+			background-color: #ebebeb;
+			border: 1px solid #ccc;
+			font: bold 14px "Lucida Grande", "Lucida Sans Unicode", "Lucida Sans",
+			"Geneva", "Verdana", "sans-serif";
+		}
+
+		#optionsList > ul {
+			list-style: none;
+		}
+
+
+		#optionsList > ul > li {
+		padding: 5px 5px 5px 5px;
+
+			cursor:pointer;
 		}
 
 		#ticker > ul > li{
@@ -164,35 +185,52 @@
 
 		// jQuery dependent code
 		function letsJQuery() {
+
+			localStorage.foo = "bar";
+
+			unsafeWindow.console.log(localStorage.foo);
+
+			var listDiv = '<div id="optionsList"><ul><li>World</li><li>Tech</li><li>Sport</li><li>Business</li></ul></div>';
+			$('#mngb').append(listDiv);
+
+			$('#optionsList > ul > li').click( function() {
+				if($(this).css('color') == 'rgb(255, 255, 255)') {
+					$(this).css('color','#000');
+					$(this).css('background','#ebebeb');
+				}
+				else {
+					$(this).css('color','#FFF');
+					$(this).css('background','#999');
+				}
+			});
+
 			var tickerDiv = '<div id="ticker"><ul id="news"><li></li></ul><div id="topic">'+'</div></div>';
 
 			$('#body').append(tickerDiv);
 			$('#ticker').fadeIn('slow');
 
-
 			var i = 0;
 
-			$('ul > li').eq(0).html('<a href="'+newsObj[i].link+'">'+newsObj[i].title+'</a>');
+			$('#ticker > ul > li').eq(0).html('<a href="'+newsObj[i].link+'" target="_blank">'+newsObj[i].title+'</a>');
 			$('#topic').text(newsObj[i].topic);
-
-			$('ul > li').eq(0).fadeIn('slow');
+			$('#ticker > ul > li').eq(0).fadeIn('slow');
 
 			setInterval(animateList, 2500);
 
 			function animateList() {
-				$('ul > li').eq(0).fadeOut('fast', function() {
+				$('#ticker > ul > li').eq(0).fadeOut('fast', function() {
 					i++;
-					$('ul > li').eq(0).html('<a href="'+newsObj[i].link+'">'+newsObj[i].title+'</a>');
 					i %= newsObj.length;
+
+					$('#ticker > ul > li').eq(0).html('<a href="'+newsObj[i].link+'" target="_blank">'+newsObj[i].title+'</a>');
 					$('#topic').text(newsObj[i].topic);
 					unsafeWindow.console.log(newsObj.length);
 
-					$('ul > li').eq(cnt).fadeIn('fast', function() {
+					$('#ticker > ul > li').eq(cnt).fadeIn('fast', function() {
 
 					});
 				});
 			}
 		}
 	}
-
 })();
